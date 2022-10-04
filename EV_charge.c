@@ -3,26 +3,26 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define Relay_out     8     //¼ÌµçÆ÷¿ØÖÆ½Å
-#define CHARGE_TIME (8 * 3600000) //³äµç8Ğ¡Ê±ºó¹Ø±Õ
-//#define CHARGE_TIME   6000  //²âÊÔ6s
+#define Relay_out     8     //ç»§ç”µå™¨æ§åˆ¶è„š
+#define CHARGE_TIME (9 * 3600000) //å……ç”µ9å°æ—¶åå…³é—­
+//#define CHARGE_TIME   6000  //æµ‹è¯•6s
 
-#define Buzzer_PIN    6     // ·äÃùÆ÷½Å
-#define Buzzer_Feq    2100  // ÆµÂÊ
+#define Buzzer_PIN    6     // èœ‚é¸£å™¨è„š
+#define Buzzer_Feq    2100  // é¢‘ç‡
 
 #define CARD_NUM      5
-/* MFRC522 ¹Ü½Å³õÊ¼»¯ÅäÖÃ*/
+/* MFRC522 ç®¡è„šåˆå§‹åŒ–é…ç½®*/
 #define RST_PIN         9           // Configurable, see typical pin layout above
 #define SS_PIN          10          // Configurable, see typical pin layout above
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
 
-/* NFC¿¨ĞÅÏ¢½á¹¹Ìå */
+/* NFCå¡ä¿¡æ¯ç»“æ„ä½“ */
 struct Card_Info{
   byte _info[5];
 };
-/* À©Õ¹¶¨Ê±Æ÷½á¹¹Ìå */
+/* æ‰©å±•å®šæ—¶å™¨ç»“æ„ä½“ */
 struct TickTimer{
   unsigned long start;
   unsigned long interval;
@@ -30,26 +30,25 @@ struct TickTimer{
 };
 
 /* ============================================================================================ */
-/* ========================== È«¾Ö±äÁ¿ ========================================================== */
-// ÉêÇëµÄ¶¨Ê±Æ÷£¬ÓÃÓÚ¶¨Ê±
+/* ========================== å…¨å±€å˜é‡ ========================================================== */
+// ç”³è¯·çš„å®šæ—¶å™¨ï¼Œç”¨äºå®šæ—¶
 TickTimer tick_off;
 
-// ¹ÜÀíÔ±Card UID
-const Card_Info Admin_Card = {0xF0,0x54,0x37,0x8E, 0x20};/*¾Ó×¡Ö¤*/
-//const Card_Info Admin_Card = {0x64,0x6D,0xA8,0x64, 0x08};/*¿Õ°×¿¨*/
-//const Card_Info Admin_Card = {0x03,0xC4,0xF4,0xB9, 0x08};/*Ô¿³×¿¨*/
+// ç®¡ç†å‘˜Card UID
+const Card_Info Admin_Card = {0x64,0x6D,0xA8,0x64, 0x08};/*ç©ºç™½å¡*/
+//const Card_Info Admin_Card = {0x03,0xC4,0xF4,0xB9, 0x08};/*é’¥åŒ™å¡*/
 const Card_Info Empty_Card = {0,0,0,0,0};
-// ³äµç¿¨ĞÅÏ¢
+// å……ç”µå¡ä¿¡æ¯
 Card_Info ChargeCard[CARD_NUM] = {
   0
 //  {0x64,0x6D,0xA8,0x64,0x08},
 };
-// Ö÷³ÌĞòÊ¹ÓÃ±äÁ¿
-byte Admin_status = 0;    /* 0ÎªÕı³£Ë¢¿¨³äµç£»1ÎªÔöÉ¾¿¨Ä£Ê½ */
+// ä¸»ç¨‹åºä½¿ç”¨å˜é‡
+byte Admin_status = 0;    /* 0ä¸ºæ­£å¸¸åˆ·å¡å……ç”µï¼›1ä¸ºå¢åˆ å¡æ¨¡å¼ */
 byte m = 0;
 byte relay_status = 0;
-/* =======================¶¨Ê±Æ÷Ïà¹Øº¯Êı=============================================================== */
-/* À©Õ¹¶¨Ê±Æ÷¿ªÆô ·µ»Ø0¿ªÆô³É¹¦£¬1ÒÑ´æÔÚ*/
+/* =======================å®šæ—¶å™¨ç›¸å…³å‡½æ•°=============================================================== */
+/* æ‰©å±•å®šæ—¶å™¨å¼€å¯ è¿”å›0å¼€å¯æˆåŠŸï¼Œ1å·²å­˜åœ¨*/
 char Timer_Start(TickTimer* _timer, unsigned long _inv)
 {
   char t_status;
@@ -65,34 +64,34 @@ char Timer_Start(TickTimer* _timer, unsigned long _inv)
   }
   return t_status;
 }
-/* À©Õ¹¶¨Ê±Æ÷¼ì²é£¬·µ»Ø0¶¨Ê±Ê±¼äµ½ */
+/* æ‰©å±•å®šæ—¶å™¨æ£€æŸ¥ï¼Œè¿”å›0å®šæ—¶æ—¶é—´åˆ° */
 unsigned long Timer_Check(TickTimer* _timer)
 {
   unsigned long t_status = 0xFFFFFFFF;
   if(_timer->is_on){
     t_status = millis();
-    // ¼ÆËãÊ±¼ä¼ä¸ô
+    // è®¡ç®—æ—¶é—´é—´éš”
     if(t_status < _timer->start){
       t_status += 0xFFFFFFFF - _timer->start;
     }else{
       t_status -= _timer->start;
     }
     if(t_status >= _timer->interval){
-      // ¶¨Ê±Ê±¼äµ½
+      // å®šæ—¶æ—¶é—´åˆ°
       t_status = 0;
       _timer->start += _timer->interval;
     }
   }
   return t_status;
 }
-/* À©Õ¹¶¨Ê±Æ÷Í£Ö¹ */
+/* æ‰©å±•å®šæ—¶å™¨åœæ­¢ */
 void Timer_Stop(TickTimer* _timer)
 {
   _timer->is_on = 0;
 }
 
-/* =====================MFRC522Ïà¹Øº¯Êı================================================================= */
-/* 16½øÖÆ´òÓ¡×Ö½ÚÊıÖµ */
+/* =====================MFRC522ç›¸å…³å‡½æ•°================================================================= */
+/* 16è¿›åˆ¶æ‰“å°å­—èŠ‚æ•°å€¼ */
 void dump_byte_array(byte *buffer, byte bufferSize)
 {
     for (byte i = 0; i < bufferSize; i++) {
@@ -101,9 +100,9 @@ void dump_byte_array(byte *buffer, byte bufferSize)
     }
 }
 /*
- * ±È½ÏNFC¿¨ĞÅÏ¢
- * ·µ»ØÖµÎª1£ºĞÅÏ¢ÏàÍ¬
- * ·µ»ØÖµÎª0£ºĞÅÏ¢²»Í¬
+ * æ¯”è¾ƒNFCå¡ä¿¡æ¯
+ * è¿”å›å€¼ä¸º1ï¼šä¿¡æ¯ç›¸åŒ
+ * è¿”å›å€¼ä¸º0ï¼šä¿¡æ¯ä¸åŒ
  */
 byte Compare_NFC_Card_Info(Card_Info card)
 {
@@ -123,9 +122,9 @@ byte Compare_NFC_Card_Info(Card_Info card)
   }
 }
 /*
- * Ñ°ÕÒ´æ´¢¿ÕÓàÎ»ÖÃ
- * ·µ»ØÖµÎª1£º´ËÎ»ÖÃÎª¿Õ
- * ·µ»ØÖµÎª0£º´ËÎ»ÖÃÓĞĞÅÏ¢
+ * å¯»æ‰¾å­˜å‚¨ç©ºä½™ä½ç½®
+ * è¿”å›å€¼ä¸º1ï¼šæ­¤ä½ç½®ä¸ºç©º
+ * è¿”å›å€¼ä¸º0ï¼šæ­¤ä½ç½®æœ‰ä¿¡æ¯
  */
 byte Find_Empty_Pos(byte pos)
 {
@@ -143,14 +142,14 @@ byte Find_Empty_Pos(byte pos)
     return 0;
   }
 }
-/* Çå³ı¿¨ĞÅÏ¢ */
+/* æ¸…é™¤å¡ä¿¡æ¯ */
 void Clear_CardInfo(Card_Info* card)
 {
   for(byte i = 0; i < 5; i++){
     card->_info[i] = 0;
   }
 }
-/* ½«ĞÂ»ñÈ¡µÄ¿¨ĞÅÏ¢ÌîÈëÊı×é */
+/* å°†æ–°è·å–çš„å¡ä¿¡æ¯å¡«å…¥æ•°ç»„ */
 void Fill_New_CardInfo(Card_Info* card)
 {
   for(byte i = 0; i < 4; i++){
@@ -159,58 +158,58 @@ void Fill_New_CardInfo(Card_Info* card)
   card->_info[4] = mfrc522.uid.sak;
 }
 
-/* É¾³ı¿¨ĞÅÏ¢
- * É¾³ı¶ÔÓ¦Î»ÖÃµÄ¿¨ĞÅÏ¢
+/* åˆ é™¤å¡ä¿¡æ¯
+ * åˆ é™¤å¯¹åº”ä½ç½®çš„å¡ä¿¡æ¯
  */
 void Delete_CardInfo(byte pos)
 {
   byte i = pos;
-  // ºó·½ĞÅÏ¢ÏòÇ°¸²¸Ç
+  // åæ–¹ä¿¡æ¯å‘å‰è¦†ç›–
   for(; i < (CARD_NUM-1); i++){
     ChargeCard[i] = ChargeCard[i+1];
   }
-  // ×îºóÒ»ÌõĞÅÏ¢Çå¿Õ
+  // æœ€åä¸€æ¡ä¿¡æ¯æ¸…ç©º
   Clear_CardInfo(&ChargeCard[CARD_NUM-1]);
 }
-/* Ôö¼Ó¿¨ĞÅÏ¢ */
+/* å¢åŠ å¡ä¿¡æ¯ */
 void Add_CardInfo(void)
 {
-  // ÏÈ²éÕÒ¿ÕÓàÎ»
+  // å…ˆæŸ¥æ‰¾ç©ºä½™ä½
   byte i;
   for(i = 0; i < CARD_NUM; i++){
     if(Find_Empty_Pos(i)){
       break;
     }
   }
-  // ÅĞ¶ÏÊÇ·ñÓĞ¿ÕÎ»
+  // åˆ¤æ–­æ˜¯å¦æœ‰ç©ºä½
   if(i < CARD_NUM){
-    // ÓĞ¿ÕÎ»£¬Ö±½ÓÂ¼Èë
+    // æœ‰ç©ºä½ï¼Œç›´æ¥å½•å…¥
     Fill_New_CardInfo(&ChargeCard[i]);
   }else{
-    // ÎŞ¿ÕÎ»£¬É¾³ıµÚÒ»×é£¬ºó·½ĞÅÏ¢ÏòÇ°¸²¸Ç
+    // æ— ç©ºä½ï¼Œåˆ é™¤ç¬¬ä¸€ç»„ï¼Œåæ–¹ä¿¡æ¯å‘å‰è¦†ç›–
     Delete_CardInfo(0);
-    // ½«ĞÂ¿¨ĞÅÏ¢·ÅÔÚ×îºóÒ»¸ö
+    // å°†æ–°å¡ä¿¡æ¯æ”¾åœ¨æœ€åä¸€ä¸ª
     Fill_New_CardInfo(&ChargeCard[CARD_NUM-1]);
   }
 }
-/* =====================EEPROMÏà¹Øº¯Êı================================================================= */
-/* ÉÏµç¼ÓÔØËùÓĞ¿¨ĞÅÏ¢ */
+/* =====================EEPROMç›¸å…³å‡½æ•°================================================================= */
+/* ä¸Šç”µåŠ è½½æ‰€æœ‰å¡ä¿¡æ¯ */
 void Load_Card_Info(void)
 {
   if(CARD_NUM == EEPROM.read(0)){
-    // ´æÔÚÓĞĞ§ĞÅÏ¢£¬²Å¼ÓÔØĞÅÏ¢
+    // å­˜åœ¨æœ‰æ•ˆä¿¡æ¯ï¼Œæ‰åŠ è½½ä¿¡æ¯
     for(byte i = 0; i < CARD_NUM; i++){
       EEPROM.get(1+5*i, ChargeCard[i]);
     }
   }
-  // ´òÓ¡³ö¿¨ĞÅÏ¢
+  // æ‰“å°å‡ºå¡ä¿¡æ¯
   Serial.println(F("ALL Card UID:"));
   for(byte j = 0; j < CARD_NUM; j++){
     dump_byte_array((byte*)&ChargeCard[j], 5);
     Serial.println("");
   }
 }
-/* ´æ´¢ËùÓĞ¿¨ĞÅÏ¢ */
+/* å­˜å‚¨æ‰€æœ‰å¡ä¿¡æ¯ */
 void Store_Card_Info(void)
 {
   EEPROM.write(0, CARD_NUM);
@@ -219,8 +218,8 @@ void Store_Card_Info(void)
   }
 }
 
-/* =====================·äÃùÆ÷Ïà¹Øº¯Êı================================================================= */
-/* ¹ÜÀíÔ±¿¨Ë¢¿¨·äÃùº¯Êı   ÈıÉù³¤Ïì */
+/* =====================èœ‚é¸£å™¨ç›¸å…³å‡½æ•°================================================================= */
+/* ç®¡ç†å‘˜å¡åˆ·å¡èœ‚é¸£å‡½æ•°   ä¸‰å£°é•¿å“ */
 void Admin_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
@@ -235,7 +234,7 @@ void Admin_Buzzer(void)
   delay(200);
   noTone(Buzzer_PIN);
 }
-/* ·Ç·¨Ë¢¿¨·äÃùº¯Êı   ÈıÉù¶ÌÏì */
+/* éæ³•åˆ·å¡èœ‚é¸£å‡½æ•°   ä¸‰å£°çŸ­å“ */
 void Illegal_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
@@ -250,7 +249,7 @@ void Illegal_Buzzer(void)
   delay(50);
   noTone(Buzzer_PIN);
 }
-/* Ôö¼Ó¿¨·äÃùº¯Êı Á½ÉùÏì */
+/* å¢åŠ å¡èœ‚é¸£å‡½æ•° ä¸¤å£°å“ */
 void Add_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
@@ -261,7 +260,7 @@ void Add_Buzzer(void)
   delay(200);
   noTone(Buzzer_PIN);
 }
-/* É¾³ı¿¨·äÃùº¯Êı Á½ÉùÏì */
+/* åˆ é™¤å¡èœ‚é¸£å‡½æ•° ä¸¤å£°å“ */
 void Del_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
@@ -272,14 +271,14 @@ void Del_Buzzer(void)
   delay(50);
   noTone(Buzzer_PIN);
 }
-/* Ë¢¿¨¿ªÊ¼³äµç·äÃùº¯Êı Ò»Éù³¤Ïì*/
+/* åˆ·å¡å¼€å§‹å……ç”µèœ‚é¸£å‡½æ•° ä¸€å£°é•¿å“*/
 void Start_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
   delay(500);
   noTone(Buzzer_PIN);
 }
-/* Ë¢¿¨Í£Ö¹³äµç·äÃùº¯Êı Ò»Éù¶ÌÏì*/
+/* åˆ·å¡åœæ­¢å……ç”µèœ‚é¸£å‡½æ•° ä¸€å£°çŸ­å“*/
 void Stop_Buzzer(void)
 {
   tone(Buzzer_PIN,Buzzer_Feq);
@@ -287,17 +286,17 @@ void Stop_Buzzer(void)
   noTone(Buzzer_PIN);
 }
 
-/* ==========================³õÊ¼»¯º¯Êı========================================================== */
+/* ==========================åˆå§‹åŒ–å‡½æ•°========================================================== */
 void setup()
 {
   // put your setup code here, to run once:
-  pinMode(Relay_out, OUTPUT);   // ¼ÌµçÆ÷³õÊ¼»¯
-  pinMode(Buzzer_PIN, OUTPUT);   // ·äÃùÆ÷³õÊ¼»¯
+  pinMode(Relay_out, OUTPUT);   // ç»§ç”µå™¨åˆå§‹åŒ–
+  pinMode(Buzzer_PIN, OUTPUT);   // èœ‚é¸£å™¨åˆå§‹åŒ–
   Serial.begin(9600);
   while (!Serial);
   SPI.begin();            // Init SPI bus
   mfrc522.PCD_Init();     // Init MFRC522
-  // ¼ÓÔØ¿¨ĞÅÏ¢
+  // åŠ è½½å¡ä¿¡æ¯
   Load_Card_Info();
 }
 
@@ -305,100 +304,100 @@ void loop()
 {
   // put your main code here, to run repeatedly:
   
-  // Ñ°ÕÒĞÂ¿¨
+  // å¯»æ‰¾æ–°å¡
   if ( mfrc522.PICC_IsNewCardPresent()) {
-    // Ñ¡ÔñÆäÖĞÒ»¸ö¿¨
+    // é€‰æ‹©å…¶ä¸­ä¸€ä¸ªå¡
     if ( mfrc522.PICC_ReadCardSerial()) {
-      // ´òÓ¡Êä³öNFC¿¨µÄUIDÖµ
+      // æ‰“å°è¾“å‡ºNFCå¡çš„UIDå€¼
       Serial.print(F("Card UID:"));
       dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
       Serial.println();
-      // ´òÓ¡Êä³öNFC¿¨µÄSAKÖµ
+      // æ‰“å°è¾“å‡ºNFCå¡çš„SAKå€¼
       Serial.print(F("Card SAK: "));
       if(mfrc522.uid.sak < 0x10)
         Serial.print(F("0"));
       Serial.println(mfrc522.uid.sak, HEX);
       
-      // ÅĞ¶ÏÊÇ·ñ½øÈëÔöÉ¾¿¨Ä£Ê½
+      // åˆ¤æ–­æ˜¯å¦è¿›å…¥å¢åˆ å¡æ¨¡å¼
       if(Admin_status)
       {
         if(0 == Compare_NFC_Card_Info(Admin_Card)){
-          // ·Ç¹ÜÀí¿¨
-          // ÔöÉ¾¿¨Ä£Ê½
+          // éç®¡ç†å¡
+          // å¢åˆ å¡æ¨¡å¼
           for(m = 0; m < CARD_NUM; m++){
-            // ÅĞ¶Ï´Ë¿¨ÊÇ·ñÒÑ´æÔÚ
+            // åˆ¤æ–­æ­¤å¡æ˜¯å¦å·²å­˜åœ¨
             if(Compare_NFC_Card_Info(ChargeCard[m])){
               break;
             }
           }
-          // mĞ¡ÓÚCARD_NUMÔòËµÃ÷´æÔÚ³äµç¿¨
+          // må°äºCARD_NUMåˆ™è¯´æ˜å­˜åœ¨å……ç”µå¡
           if(m < CARD_NUM){
-            // ´Ë¿¨ÒÑ´æÔÚ£¬É¾³ı´Ë¿¨
+            // æ­¤å¡å·²å­˜åœ¨ï¼Œåˆ é™¤æ­¤å¡
             Delete_CardInfo(m);
-            Serial.println("É¾³ı¿¨£¡");
-            Del_Buzzer(); /* ·äÃùÆ÷ */
+            Serial.println("åˆ é™¤å¡ï¼");
+            Del_Buzzer(); /* èœ‚é¸£å™¨ */
           }else{
-            // ´Ë¿¨²»´æÔÚ£¬Ôö¼Ó´Ë¿¨
+            // æ­¤å¡ä¸å­˜åœ¨ï¼Œå¢åŠ æ­¤å¡
             Add_CardInfo();
-            Serial.println("Ôö¼Ó¿¨£¡");
-            Add_Buzzer(); /* ·äÃùÆ÷ */
+            Serial.println("å¢åŠ å¡ï¼");
+            Add_Buzzer(); /* èœ‚é¸£å™¨ */
           }
-          // ¿¨ĞÅÏ¢±ä¸ü£¬´æ´¢¿¨ĞÅÏ¢
+          // å¡ä¿¡æ¯å˜æ›´ï¼Œå­˜å‚¨å¡ä¿¡æ¯
           Store_Card_Info();
         }else{
-          // ¹ÜÀíÔ±¿¨
+          // ç®¡ç†å‘˜å¡
           Admin_Buzzer();
         }
         
-        // »Ö¸´Õı³£Ë¢¿¨Ä£Ê½
+        // æ¢å¤æ­£å¸¸åˆ·å¡æ¨¡å¼
         Admin_status = 0;
       }
       else
       {
-        // Õı³£Ë¢¿¨Ä£Ê½
-        // ÅĞ¶ÏÊÇ·ñÎª¹ÜÀíÔ±NFC¿¨È¨ÏŞ
+        // æ­£å¸¸åˆ·å¡æ¨¡å¼
+        // åˆ¤æ–­æ˜¯å¦ä¸ºç®¡ç†å‘˜NFCå¡æƒé™
         if(Compare_NFC_Card_Info(Admin_Card)){
-          // ÊÇ¹ÜÀíÔ±¿¨
-          Serial.println("¹ÜÀíÔ±¿¨£¡");
-          Admin_Buzzer(); /* ·äÃùÆ÷ */
-          Admin_status = 1;/* ½øÈëÔöÉ¾¿¨Ä£Ê½ */
+          // æ˜¯ç®¡ç†å‘˜å¡
+          Serial.println("ç®¡ç†å‘˜å¡ï¼");
+          Admin_Buzzer(); /* èœ‚é¸£å™¨ */
+          Admin_status = 1;/* è¿›å…¥å¢åˆ å¡æ¨¡å¼ */
         }else{
-          // ²»ÊÇ¹ÜÀíÔ±¿¨
-          // ¼ÌĞøÑ­»·ÅĞ¶Ï
+          // ä¸æ˜¯ç®¡ç†å‘˜å¡
+          // ç»§ç»­å¾ªç¯åˆ¤æ–­
           for(m = 0; m < CARD_NUM; m++){
-            // ÅĞ¶ÏÊÇ·ñÎª³äµç¿¨
+            // åˆ¤æ–­æ˜¯å¦ä¸ºå……ç”µå¡
             if(Compare_NFC_Card_Info(ChargeCard[m])){
-              // ºÏ·¨¿¨
+              // åˆæ³•å¡
               break;
             }
           }
-          // m²»µÈÓÚCARD_NUMÔòËµÃ÷´æÔÚ³äµç¿¨
+          // mä¸ç­‰äºCARD_NUMåˆ™è¯´æ˜å­˜åœ¨å……ç”µå¡
           if(m < CARD_NUM){
-            // ´æÔÚÓĞĞ§¿¨
-            // ¿¨ºÅÕıÈ·
+            // å­˜åœ¨æœ‰æ•ˆå¡
+            // å¡å·æ­£ç¡®
             if(0 == relay_status){
               digitalWrite(Relay_out, HIGH);
               relay_status = 1;
               Serial.println("HIGH!");
-              // ¿ªÆô¶¨Ê±
+              // å¼€å¯å®šæ—¶
               Timer_Start(&tick_off, CHARGE_TIME);
-              Start_Buzzer(); /* ·äÃùÆ÷ */
+              Start_Buzzer(); /* èœ‚é¸£å™¨ */
             }else{
               digitalWrite(Relay_out, LOW);
               relay_status = 0;
               Serial.println("LOW!");
-              // ¹Ø±Õ¶¨Ê±
+              // å…³é—­å®šæ—¶
               Timer_Stop(&tick_off);
-              Stop_Buzzer(); /* ·äÃùÆ÷ */
+              Stop_Buzzer(); /* èœ‚é¸£å™¨ */
             }
           }else{
-            // ÎŞÓĞĞ§¿¨
+            // æ— æœ‰æ•ˆå¡
             Illegal_Buzzer();
-            Serial.println("·Ç·¨¿¨£¡");
+            Serial.println("éæ³•å¡ï¼");
           }
         }
       }
-      // µÈ´ıÏÂÒ»´Î·¢ÏÖĞÂ¿¨
+      // ç­‰å¾…ä¸‹ä¸€æ¬¡å‘ç°æ–°å¡
       mfrc522.PICC_HaltA();       // Halt PICC
       //mfrc522.PCD_StopCrypto1();  // Stop encryption on PCD
       
@@ -407,16 +406,16 @@ void loop()
     }
   }
 
-  // ¶¨Ê±¹Ø±Õ³äµç
+  // å®šæ—¶å…³é—­å……ç”µ
   if(0 == Timer_Check(&tick_off)){
-    // ¶¨Ê±Ê±¼äµ½£¬¹Ø±Õ¼ÌµçÆ÷
+    // å®šæ—¶æ—¶é—´åˆ°ï¼Œå…³é—­ç»§ç”µå™¨
     digitalWrite(Relay_out, LOW);
     relay_status = 0;
-    // ¹Ø±Õ¶¨Ê±Æ÷
+    // å…³é—­å®šæ—¶å™¨
     Timer_Stop(&tick_off);
-    Stop_Buzzer(); /* ·äÃùÆ÷ */
+    Stop_Buzzer(); /* èœ‚é¸£å™¨ */
     
-    Serial.println("¹Ø±Õ³äµç!");
+    Serial.println("å…³é—­å……ç”µ!");
     Serial.print(millis());
     Serial.println("ms");
   }
