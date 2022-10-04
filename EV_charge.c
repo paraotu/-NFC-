@@ -35,8 +35,8 @@ struct TickTimer{
 TickTimer tick_off;
 
 // 管理员Card UID
-const Card_Info Admin_Card = {0x64,0x6D,0xA8,0x64, 0x08};/*空白卡*/
-//const Card_Info Admin_Card = {0x03,0xC4,0xF4,0xB9, 0x08};/*钥匙卡*/
+const Card_Info Admin_Card = {0xF0,0x54,0x37,0x8E, 0x20};
+
 const Card_Info Empty_Card = {0,0,0,0,0};
 // 充电卡信息
 Card_Info ChargeCard[CARD_NUM] = {
